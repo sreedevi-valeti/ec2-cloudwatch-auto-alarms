@@ -1,0 +1,68 @@
+---
+title: EC2 Lifecycle-Driven CloudWatch Auto-Alarms
+---
+flowchart TB
+  classDef ec2 fill:#FF9900,stroke:#7a4d00,color:#111,font-weight:bold
+  classDef event fill:#FF4F8B,stroke:#8a1146,color:#fff
+  classDef lambda fill:#ED7100,stroke:#7a3b00,color:#fff,font-weight:bold
+  classDef cw fill:#E7157B,stroke:#7a0a40,color:#fff
+  classDef sns fill:#C925D1,stroke:#5e1163,color:#fff
+  classDef ssm fill:#1A73E8,stroke:#0b3c7a,color:#fff
+  classDef note fill:#F2F3F5,stroke:#9aa0a6,color:#111
+  classDef good fill:#1E8E3E,stroke:#0c5224,color:#fff
+
+  subgraph LIFE["1 - EC2 Instance Lifecycle"]
+    direction LR
+    L["New launch<br/>reaches RUNNING"]:::ec2
+    SS["Stop then Start"]:::ec2
+    T["Terminate"]:::ec2
+  end
+
+  subgraph PROV["2 - Agent Provisioning (SSM)"]
+    direction TB
+    SSMDOC["SSM Document<br/>install + configure + start<br/>(single ordered step)"]:::ssm
+    PARAM[("SSM Parameter Store<br/>agent config")]:::ssm
+    AGENT["CloudWatch Agent<br/>runs inside the instance"]:::ssm
+    CWM[("CWAgent metrics<br/>mem + disk per filesystem")]:::cw
+    PARAM --> SSMDOC --> AGENT --> CWM
+  end
+
+  EBR{{"EventBridge<br/>state-change rule"}}:::event
+  EBW{{"EventBridge<br/>weekly safety sweep"}}:::event
+  SCHED{{"EventBridge Scheduler<br/>one-shot recheck (~30 min)<br/>self-deletes"}}:::event
+
+  LAM(["AWS Lambda<br/>auto_alarms"]):::lambda
+
+  L -->|"tagged AutoAlarmAgent=enabled"| SSMDOC
+  L --> EBR
+  SS --> EBR
+  T --> EBR
+  EBW --> LAM
+  SCHED --> LAM
+  EBR --> LAM
+
+  LAM --> DEC{"Why was I called?"}
+
+  DEC -->|"running & no alarms yet<br/>(brand-new launch)"| CRE["Create now:<br/>CPU + Status alarms<br/>(no agent needed)"]:::cw
+  CRE --> SETSCHED["Schedule one-shot recheck"]:::note
+  SETSCHED --> SCHED
+
+  DEC -->|"running & alarms exist"| SKIP["Skip<br/>(start-after-stop)"]:::note
+
+  DEC -->|"recheck or weekly sweep"| AGCK{"Agent reporting<br/>mem / disk yet?"}
+  AGCK -->|yes| MD["Create:<br/>Memory + Disk alarms<br/>(per filesystem, skip vfat)"]:::cw
+  AGCK -->|no| WAIT["Do nothing<br/>next sweep retries"]:::note
+
+  DEC -->|"terminated / shutting-down"| DEL["Delete ALL alarms<br/>named AutoAlarm-&lt;id&gt;-*<br/>+ pending recheck"]:::good
+
+  CRE --> AL[("CloudWatch Alarms<br/>Warning + Critical")]:::cw
+  MD --> AL
+  CWM -. "supplies mem/disk data" .-> AL
+
+  AL -->|Warning| SNSW{{"SNS - Warning topic"}}:::sns
+  AL -->|Critical| SNSC{{"SNS - Critical topic"}}:::sns
+  SNSW --> EM1["Email / Slack"]:::note
+  SNSC --> EM2["On-call / PagerDuty"]:::note
+
+  AL -. "System check fails" .-> REC["EC2 Auto-Recover"]:::note
+  AL -. "Instance check fails" .-> RB["EC2 Reboot"]:::note
