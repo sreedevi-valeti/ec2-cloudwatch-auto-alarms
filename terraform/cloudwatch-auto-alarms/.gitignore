@@ -1,0 +1,13 @@
+build/
+*.zip
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+out.json
+.test_iid.txt
+__pycache__/
+*.pyc

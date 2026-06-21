@@ -1,0 +1,30 @@
+region      = "us-east-1"
+name_prefix = "ec2-auto-alarms"
+
+# Emails that receive alarm notifications (each must confirm the SNS subscription).
+warning_subscription_emails  = ["devops-warning@example.com"]
+critical_subscription_emails = ["oncall@example.com"]
+
+# Thresholds (optional — these are the defaults)
+cpu_warning   = 70
+cpu_critical  = 90
+mem_warning   = 80
+mem_critical  = 90
+disk_warning  = 80
+disk_critical = 90
+
+# One-shot disk/memory recheck delay after launch, and weekly safety sweep.
+recheck_delay_seconds      = 1800
+reconcile_interval_minutes = 10080
+
+# Filesystem types skipped for disk alarms (vfat = the static /boot/efi partition).
+ignore_disk_fstypes = ["vfat"]
+
+# Instances tagged with this key/value get the CloudWatch agent installed via SSM.
+agent_target_tag_key   = "AutoAlarmAgent"
+agent_target_tag_value = "enabled"
+
+tags = {
+  Project = "ec2-auto-alarms"
+  Owner   = "platform"
+}
