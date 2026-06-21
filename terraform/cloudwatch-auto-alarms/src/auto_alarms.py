@@ -326,6 +326,9 @@ def _put_status_check_alarms(instance_id):
     recover_arn = f"arn:aws:automate:{REGION}:ec2:recover"
     reboot_arn = f"arn:aws:automate:{REGION}:ec2:reboot"
 
+    # treat_missing="missing" so a still-initializing instance (no status metric yet)
+    # sits in INSUFFICIENT_DATA rather than ALARM -- otherwise the System alarm would
+    # trigger auto-recovery on a healthy booting instance.
     _put_alarm(
         name=_alarm_name(instance_id, "StatusCheckFailed_System", "Critical"),
         namespace="AWS/EC2",
@@ -334,7 +337,7 @@ def _put_status_check_alarms(instance_id):
         threshold=1,
         period=STATUS_PERIOD,
         eval_periods=STATUS_EVAL_PERIODS,
-        treat_missing="breaching",
+        treat_missing="missing",
         statistic="Maximum",
         actions=[recover_arn, CRITICAL_TOPIC_ARN],
         description=f"Critical: system status check on {instance_id} (auto-recover)",
@@ -347,7 +350,7 @@ def _put_status_check_alarms(instance_id):
         threshold=1,
         period=STATUS_PERIOD,
         eval_periods=STATUS_EVAL_PERIODS,
-        treat_missing="breaching",
+        treat_missing="missing",
         statistic="Maximum",
         actions=[reboot_arn, CRITICAL_TOPIC_ARN],
         description=f"Critical: instance status check on {instance_id} (auto-reboot)",
