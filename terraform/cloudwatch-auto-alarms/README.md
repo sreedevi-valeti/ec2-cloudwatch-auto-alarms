@@ -10,8 +10,8 @@ and deletes them when the instance is **terminated** — no manual upkeep, no or
 | CPUUtilization | EC2 native | ≥70% | ≥90% |
 | mem_used_percent | CloudWatch agent | ≥80% | ≥90% |
 | disk_used_percent (one pair **per filesystem**) | CloudWatch agent | ≥80% | ≥90% |
-| StatusCheckFailed_System | EC2 native | — | ≥1 → **auto-recover** |
-| StatusCheckFailed_Instance | EC2 native | — | ≥1 → **auto-reboot** |
+| StatusCheckFailed_System | EC2 native | — | ≥1 → **alert** |
+| StatusCheckFailed_Instance | EC2 native | — | ≥1 → **alert** |
 
 Warning alarms publish to the **Warning** SNS topic; Critical to the **Critical** topic.
 
@@ -27,8 +27,8 @@ per-metric child alarms into **one composite per severity per instance**:
 
 - **Child cpu/mem/disk alarms no longer notify** — they only feed the composites' `AlarmRule`.
   This is what collapses the flood into one alert.
-- **Status-check alarms are unchanged**: they keep their own notify action + EC2
-  auto-recover/reboot. They are the root-cause "instance down" signal.
+- **Status-check alarms notify directly** (alert-only): they keep their own notify action to
+  the Critical topic. They are the root-cause "instance down" signal.
 - **Down-state suppression**: the Critical composite's `ActionsSuppressor` is the
   `StatusCheckFailed_System` alarm. When an instance is simply DOWN, the symptom flood
   (cpu/mem/disk going INSUFFICIENT/breaching) is muted and only the System alarm alerts.

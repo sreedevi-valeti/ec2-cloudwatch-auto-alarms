@@ -5,6 +5,10 @@ checks** — each Warning + Critical) the moment an EC2 instance launches, and d
 of them automatically when the instance is terminated. Event-driven, serverless, and
 delivered as Terraform.
 
+> **Companion project:** [**ec2-alert-enrichment**](https://github.com/sreedevi-valeti/ec2-alert-enrichment)
+> consumes this project's `Critical` / `Warning` SNS topics and turns each alarm into a rich,
+> root-cause **SES email** with live read-only SSM diagnostics — for both **Linux and Windows**.
+
 ## Architecture & workflow
 
 ![Architecture](docs/architecture.png)
@@ -22,7 +26,7 @@ safety sweep catches volumes attached later. On termination, every alarm named
   schedule. Scheduled triggers aren't billed; the only real cost is alarms + custom metrics.
 - **No false alarms during warm-up** — agent-dependent alarms (mem/disk) are created only
   after metrics exist; status-check alarms use `TreatMissingData=missing` so a still-initializing
-  instance never trips auto-recovery.
+  instance never false-alarms.
 - **Brand-new launches only** — a stop→start is detected and skipped (alarms persist across stop).
 - **Self-healing** — weekly sweep + daily agent re-config association recover from drift.
 
