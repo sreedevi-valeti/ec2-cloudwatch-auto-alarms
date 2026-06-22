@@ -54,6 +54,25 @@ variable "disk_critical" {
   default = 90
 }
 
+# Windows thresholds. Memory is a used-% counter (alarm when high). Disk reports FREE %
+# (no native used%/inodes on Windows), so these are low-water marks: alarm when free <= value.
+variable "win_mem_warning" {
+  type    = number
+  default = 80
+}
+variable "win_mem_critical" {
+  type    = number
+  default = 90
+}
+variable "win_disk_free_warning" {
+  type    = number
+  default = 20
+}
+variable "win_disk_free_critical" {
+  type    = number
+  default = 10
+}
+
 # --- Evaluation tuning ------------------------------------------------------ #
 variable "period" {
   description = "Seconds per datapoint for CPU/mem/disk alarms."
@@ -104,6 +123,18 @@ variable "recheck_delay_seconds" {
   default     = 1800
 }
 
+variable "enable_composite_alarms" {
+  description = "Roll per-metric child alarms into one Warning + one Critical composite per instance; child alarms then carry no notify action (the composites do). The Critical composite is suppressed by the System status alarm so a DOWN instance doesn't flood symptom alerts."
+  type        = bool
+  default     = true
+}
+
+variable "composite_suppressor_wait_seconds" {
+  description = "Wait/extension period (seconds) for the Critical composite's ActionsSuppressor (the System status alarm)."
+  type        = number
+  default     = 60
+}
+
 variable "manage_cloudwatch_agent" {
   description = "If true, create SSM resources to install/configure the CloudWatch agent."
   type        = bool
@@ -111,9 +142,9 @@ variable "manage_cloudwatch_agent" {
 }
 
 variable "ignore_disk_fstypes" {
-  description = "Filesystem types to skip for disk alarms (vfat = the static /boot/efi partition)."
+  description = "Filesystem types to skip for disk alarms (vfat = /boot/efi; efivarfs = EFI vars pseudo-fs)."
   type        = list(string)
-  default     = ["vfat"]
+  default     = ["vfat", "efivarfs"]
 }
 
 variable "agent_target_tag_key" {

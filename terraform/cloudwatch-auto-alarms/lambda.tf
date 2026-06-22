@@ -31,6 +31,10 @@ resource "aws_lambda_function" "auto_alarms" {
       MEM_CRITICAL            = tostring(var.mem_critical)
       DISK_WARNING            = tostring(var.disk_warning)
       DISK_CRITICAL           = tostring(var.disk_critical)
+      WIN_MEM_WARNING         = tostring(var.win_mem_warning)
+      WIN_MEM_CRITICAL        = tostring(var.win_mem_critical)
+      WIN_DISK_FREE_WARNING   = tostring(var.win_disk_free_warning)
+      WIN_DISK_FREE_CRITICAL  = tostring(var.win_disk_free_critical)
       PERIOD                  = tostring(var.period)
       EVAL_PERIODS            = tostring(var.eval_periods)
       STATUS_PERIOD           = tostring(var.status_period)
@@ -41,6 +45,9 @@ resource "aws_lambda_function" "auto_alarms" {
       SCHEDULER_ROLE_ARN      = aws_iam_role.scheduler.arn
       RECHECK_DELAY_SECONDS   = tostring(var.recheck_delay_seconds)
       IGNORE_DISK_FSTYPES     = join(",", var.ignore_disk_fstypes)
+
+      ENABLE_COMPOSITE_ALARMS           = tostring(var.enable_composite_alarms)
+      COMPOSITE_SUPPRESSOR_WAIT_SECONDS = tostring(var.composite_suppressor_wait_seconds)
     }
   }
 

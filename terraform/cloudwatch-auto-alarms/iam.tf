@@ -22,6 +22,7 @@ data "aws_iam_policy_document" "lambda" {
     sid = "ManageAlarms"
     actions = [
       "cloudwatch:PutMetricAlarm",
+      "cloudwatch:PutCompositeAlarm", # composite alarms are a distinct action from PutMetricAlarm
       "cloudwatch:DeleteAlarms",
       "cloudwatch:DescribeAlarms",
       "cloudwatch:ListMetrics",

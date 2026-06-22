@@ -15,6 +15,33 @@ and deletes them when the instance is **terminated** — no manual upkeep, no or
 
 Warning alarms publish to the **Warning** SNS topic; Critical to the **Critical** topic.
 
+## v1.1 — composite alarms + suppression (noise reduction)
+
+A single failing instance used to fire 8–10 separate alarms at once. v1.1 rolls the
+per-metric child alarms into **one composite per severity per instance**:
+
+| Alarm | Rule | Notifies |
+|---|---|---|
+| `AutoAlarm-<id>-Composite-Warning` | OR of all `*-Warning` children | Warning topic |
+| `AutoAlarm-<id>-Composite-Critical` | OR of all `*-Critical` children (cpu/mem/disk) | Critical topic |
+
+- **Child cpu/mem/disk alarms no longer notify** — they only feed the composites' `AlarmRule`.
+  This is what collapses the flood into one alert.
+- **Status-check alarms are unchanged**: they keep their own notify action + EC2
+  auto-recover/reboot. They are the root-cause "instance down" signal.
+- **Down-state suppression**: the Critical composite's `ActionsSuppressor` is the
+  `StatusCheckFailed_System` alarm. When an instance is simply DOWN, the symptom flood
+  (cpu/mem/disk going INSUFFICIENT/breaching) is muted and only the System alarm alerts.
+- Composites are rebuilt idempotently whenever children change (launch, agent recheck,
+  reconcile) and deleted **before** their children on terminate (AWS rejects deleting a
+  referenced child). Toggle with `enable_composite_alarms` (default `true`).
+
+> **Rich alerts live in a companion repo.** Plain-text SNS email is intentionally left off
+> here (`*_subscription_emails = []`). The **`ec2-alert-enrichment`** project subscribes a
+> Lambda to these same topics and sends one rich, root-cause SES email per alert (live SSM
+> diagnostics + deep links), plus opt-in self-healing. This repo owns alarm generation; that
+> repo owns alert delivery — integrated via the Critical/Warning SNS topics as the contract.
+
 ## How it works
 
 ```
