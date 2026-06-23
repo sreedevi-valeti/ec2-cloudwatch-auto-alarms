@@ -29,6 +29,9 @@ safety sweep catches volumes attached later. On termination, every alarm named
   instance never false-alarms.
 - **Brand-new launches only** — a stop→start is detected and skipped (alarms persist across stop).
 - **Self-healing** — weekly sweep + daily agent re-config association recover from drift.
+- **Status checks are alert-only** — auto-remediation (auto-recover / reboot) is intentionally
+  skipped. Status-check failures notify a human (or the [enrichment companion](https://github.com/sreedevi-valeti/ec2-alert-enrichment))
+  rather than being silently masked by an automatic recovery action.
 
 ## Deploy
 
